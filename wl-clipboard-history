@@ -44,13 +44,14 @@ if [ "$1" = "-t" ]; then
 	listen
 elif [ "$1" = "-l" ]; then
 	query "
-SELECT MAX(id), SUBSTRING(REPLACE(contents, '
-', ''), 1, 60) AS short_contents 
+SELECT ROW_NUMBER() OVER (ORDER BY MAX(id) DESC) AS row_num, 
+       MAX(id), 
+       SUBSTRING(REPLACE(contents, '\n', ''), 1, 60) AS short_contents 
 FROM c 
 GROUP BY contents 
-ORDER BY id DESC 
+ORDER BY MAX(id) DESC 
 LIMIT ${2:-10};
-" | sed -e 's///g'
+" | sed -e 's///g' -e 's/,/. /'
 elif [ "$1" = "-p" ]; then
 	query "SELECT contents FROM c WHERE id = ${2:-"(SELECT id FROM c ORDER BY id DESC)"}"
 else
