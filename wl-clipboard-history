@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -euo pipefail
 
-clipboard_file="$HOME/.clipboard.sqlite"
+clipboard_file=${clipboard_file:-"$XDG_RUNTIME_DIR/.clipboard.sqlite"}
 
 query () {
     echo "$1" | sqlite3 -separator "," "$clipboard_file"
@@ -45,8 +45,14 @@ fi
 if [ "$1" = "-t" ]; then
    listen
 elif [ "$1" = "-l" ]; then
-   query "SELECT MAX(id), REPLACE(contents, '
-', '') FROM c GROUP BY contents ORDER BY id DESC LIMIT ${2:-10}"
+   query "
+SELECT MAX(id), SUBSTRING(REPLACE(contents, '
+', ''), 1, 60) AS short_contents 
+FROM c 
+GROUP BY contents 
+ORDER BY id DESC 
+LIMIT ${2:-10};
+" | sed -e 's///g'
 elif [ "$1" = "-p" ]; then
    query "SELECT contents FROM c WHERE id = ${2:-"(SELECT id FROM c ORDER BY id DESC)"}"
 else
